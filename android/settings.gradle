@@ -1,0 +1,3 @@
+rootProject.name = 'oniyamma_mobile'
+
+include ':app'
