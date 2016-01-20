@@ -6,7 +6,7 @@
 
 import TabNavigator from 'react-native-tab-navigator';
 import RefreshableListView from 'react-native-refreshable-listview';
-//var RefreshableListView = require('react-native-refreshable-listview')
+// var RefreshableListView = require('react-native-refreshable-listview')
 
 var React = require('react-native');
 var {
@@ -26,6 +26,9 @@ var API_BASE_URL   = BASE_URL     + "/api/v1/";
 var IMAGE_BASE_URL = BASE_URL     + "/upload/";
 var TIMELINE_URL   = API_BASE_URL + "timeline";
 var USERS_URL      = API_BASE_URL + "users";
+var GENERATE_URL   = API_BASE_URL + "generate_user_history/";
+
+var ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== rs });
 
 var oniyamma_mobile = React.createClass({
   getInitialState: function() {
@@ -70,7 +73,7 @@ var oniyamma_mobile = React.createClass({
 var ReactUserList = React.createClass({
   getInitialState: function() {
     return {
-      items: new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== rs })
+      items: ds.cloneWithRows([])
     }
   },
   componentDidMount: function() {
@@ -121,11 +124,16 @@ var ReactUserList = React.createClass({
 });
 
 var ReactUserView = React.createClass({
+  getInitialState: function() {
+    return {
+      file_name: null
+    }
+  },
   render: function() {
     return (
       <View style={styles.userViewContainer}>
         <Image 
-            source={{uri: IMAGE_BASE_URL + this.props.item.image_file_name}}
+            source={{ uri: IMAGE_BASE_URL + (this.state.file_name ? this.state.file_name : this.props.item.image_file_name) }}
             style={styles.photo}/>
         <Text style={styles.userViewTexst}>{this.props.item.name}</Text>
         <TouchableWithoutFeedback onPress={() => this.onPressed(this.props.item)}>
@@ -136,15 +144,21 @@ var ReactUserView = React.createClass({
       </View>
     );
   },
-  onPressed: function() {
-    // TODO: Play images
+  onPressed: function(item) {
+    fetch(GENERATE_URL + item._id)
+      .then((res) => res.json())
+      .then((resData) => {
+        this.setState({
+          file_name: resData.file_name
+        });
+      });
   },
 });
 
 var ReactTimelineList = React.createClass({
   getInitialState: function() {
     return {
-      items: new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== rs })
+      items: ds.cloneWithRows([])
     }
   },
   componentDidMount: function() {
@@ -191,9 +205,9 @@ var ReactTimelineList = React.createClass({
       .then((res) => res.json())
       .then((resData) => {
         this.setState({
-          items: this.state.items.cloneWithRows(resData)
+          items: ds.cloneWithRows(resData)
         });
-      })
+      });
   },
   onPressed: function() {
     // TODO: Navigate to detail page
