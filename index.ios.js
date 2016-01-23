@@ -30,6 +30,28 @@ var GENERATE_URL   = API_BASE_URL + "generate_user_history/";
 
 var ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== rs });
 
+/**
+ * 日付をフォーマットする
+ * @param  {Date}   date     日付
+ * @param  {String} [format] フォーマット
+ * @return {String}          フォーマット済み日付
+ */
+var formatDate = function (date, format) {
+  if (!format) format = 'YYYY-MM-DD hh:mm:ss.SSS';
+  format = format.replace(/YYYY/g, date.getFullYear());
+  format = format.replace(/MM/g, ('0' + (date.getMonth() + 1)).slice(-2));
+  format = format.replace(/DD/g, ('0' + date.getDate()).slice(-2));
+  format = format.replace(/hh/g, ('0' + date.getHours()).slice(-2));
+  format = format.replace(/mm/g, ('0' + date.getMinutes()).slice(-2));
+  format = format.replace(/ss/g, ('0' + date.getSeconds()).slice(-2));
+  if (format.match(/S/g)) {
+    var milliSeconds = ('00' + date.getMilliseconds()).slice(-3);
+    var length = format.match(/S/g).length;
+    for (var i = 0; i < length; i++) format = format.replace(/S/, milliSeconds.substring(i, i + 1));
+  }
+  return format;
+};
+
 var oniyamma_mobile = React.createClass({
   getInitialState: function() {
     return {
@@ -155,6 +177,18 @@ var ReactUserView = React.createClass({
   },
 });
 
+var ReactTimelineDetail = React.createClass({
+  render: function() {
+    return (
+      <View style={styles.timelineDetail}>
+        <Image 
+            source={{ uri: IMAGE_BASE_URL + this.props.image_file_name }}
+            style={styles.detailPhoto}/>
+      </View>
+    );
+  }
+});
+
 var ReactTimelineList = React.createClass({
   getInitialState: function() {
     return {
@@ -185,7 +219,7 @@ var ReactTimelineList = React.createClass({
             style={styles.thumbnail}/>
           <View style={styles.rightContainer}>
             <Text>{this.generateTimelineText(item)}</Text>
-            <Text>{item.created_at}</Text>
+            <Text style={styles.date}>{formatDate(new Date(item.created_at), 'YYYY年MM月DD日 hh時mm分ss秒')}</Text>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -196,8 +230,8 @@ var ReactTimelineList = React.createClass({
   },
   getTypeText: function(type) {
     return {
-      'go_home': 'いってきます！',
-      'leave_home': 'ただいま！',
+      'go_home': 'ただいま！',
+      'leave_home': 'いってきます！',
     }[type];
   },
   fetchData: function() {
@@ -209,8 +243,11 @@ var ReactTimelineList = React.createClass({
         });
       });
   },
-  onPressed: function() {
-    // TODO: Navigate to detail page
+  onPressed: function(item) {
+    this.props.navigator.push({
+      component: ReactTimelineDetail,
+      passProps: { image_file_name: item.image_file_name }
+    });
   },
 });
 
@@ -241,7 +278,10 @@ var styles = StyleSheet.create({
   },
   rightContainer: {
     flex: 1,
-    marginLeft: 10
+    marginLeft: 10,
+  },
+  date: {
+    marginTop: 5
   },
   thumbnail: {
     width: 80,
@@ -252,6 +292,13 @@ var styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  timelineDetail: {
+    flex: 1,
+  },
+  detailPhoto: {
+    flex: 1,
+    flexWrap: 'wrap',
   },
   photo: {
     width: 320,
